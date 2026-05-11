@@ -1,7 +1,77 @@
+"use client";
+
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
+const KLAVIYO_PUBLIC_KEY = "RXAFSz";
+const KLAVIYO_LIST_ID = "RicT3Z";
+
 export default function Home() {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [message, setMessage] = useState("");
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!email) {
+      setStatus("error");
+      setMessage("Please enter your email address.");
+      return;
+    }
+
+    setStatus("loading");
+    setMessage("");
+
+    try {
+      const response = await fetch(
+        `https://a.klaviyo.com/client/subscriptions/?company_id=${KLAVIYO_PUBLIC_KEY}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/vnd.api+json",
+            revision: "2025-10-15",
+          },
+          body: JSON.stringify({
+            data: {
+              type: "subscription",
+              attributes: {
+                profile: {
+                  data: {
+                    type: "profile",
+                    attributes: {
+                      email,
+                    },
+                  },
+                },
+              },
+              relationships: {
+                list: {
+                  data: {
+                    type: "list",
+                    id: KLAVIYO_LIST_ID,
+                  },
+                },
+              },
+            },
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Signup failed");
+      }
+
+      setStatus("success");
+      setMessage("You’re on the list. We’ll keep you posted.");
+      setEmail("");
+    } catch {
+      setStatus("error");
+      setMessage("Something went wrong. Please try again.");
+    }
+  }
+
   return (
     <main className="min-h-screen bg-[#f7f5ef] text-[#102a1f]">
       <header className="flex items-center justify-between px-6 py-5 md:px-12">
@@ -88,11 +158,24 @@ export default function Home() {
           <p className="mx-auto mt-4 max-w-xl leading-7 text-[#53685d]">
             Sign up for launch updates, first looks at samples, and early access when Mullie Golf Co. goes live.
           </p>
-          <form className="mx-auto mt-8 flex max-w-xl flex-col gap-3 sm:flex-row">
-            <input className="flex-1 rounded-full border border-[#d6ded9] px-5 py-4 outline-none" placeholder="Email address" type="email" />
-            <Button type="submit" className="px-8 py-4">Notify Me</Button>
+          <form onSubmit={handleSubmit} className="mx-auto mt-8 flex max-w-xl flex-col gap-3 sm:flex-row">
+            <input
+              className="flex-1 rounded-full border border-[#d6ded9] px-5 py-4 outline-none"
+              placeholder="Email address"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              disabled={status === "loading"}
+            />
+            <Button type="submit" className="px-8 py-4" disabled={status === "loading"}>
+              {status === "loading" ? "Adding..." : "Notify Me"}
+            </Button>
           </form>
-          <p className="mt-4 text-xs text-[#7a8a82]">Email capture will be connected to your email platform before launch.</p>
+          {message && (
+            <p className={`mt-4 text-sm ${status === "success" ? "text-[#102a1f]" : "text-red-700"}`}>
+              {message}
+            </p>
+          )}
         </div>
       </section>
 

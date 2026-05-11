@@ -1,3 +1,3 @@
 # Mullie Golf Co. Landing Page
 
-Deploy this Next.js project on Vercel.
+Klaviyo connected with Public API Key `RXAFSz` and List ID `RicT3Z`.
